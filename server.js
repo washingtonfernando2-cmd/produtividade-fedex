@@ -1,157 +1,181 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname)));
-
-app.use(session({
-    secret: 'sua_senha_secreta_aqui',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: 'auto' }
-}));
-
-const db = new sqlite3.Database('database.db', (err) => {
-    if (err) {
-        console.error(err.message);
+// Configuração do banco de dados PostgreSQL
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
-    console.log('Conectado ao banco de dados SQLite.');
-    db.run(`CREATE TABLE IF NOT EXISTS pedidos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        idColaborador TEXT,
-        nomeColaborador TEXT,
-        numeroPedido TEXT,
-        perfilPedido TEXT,
-        quantidadePecas INTEGER,
-        tempoSeparacao TEXT,
-        dataHoraInicio TEXT,
-        dataHoraFim TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fedexId TEXT UNIQUE,
-        password TEXT
-    )`);
-    // Tabela para usuários aprovados
-    db.run(`CREATE TABLE IF NOT EXISTS approved_users (
-        fedexId TEXT UNIQUE,
-        nome TEXT
-    )`);
 });
 
-const isAuthenticated = (req, res, next) => {
-    if (req.session.isLoggedIn) {
-        return next();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 // 24 horas
     }
-    res.status(401).send('Não autorizado');
+}));
+
+// Funções de inicialização do banco de dados
+async function initializeDb() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS approved_users (
+                id SERIAL PRIMARY KEY,
+                fedex_id VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255)
+            );
+        `);
+        console.log("Tabela 'approved_users' verificada/criada.");
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                fedex_id VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL
+            );
+        `);
+        console.log("Tabela 'users' verificada/criada.");
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS pedidos (
+                id SERIAL PRIMARY KEY,
+                idColaborador VARCHAR(255),
+                nomeColaborador VARCHAR(255),
+                numeroPedido VARCHAR(255),
+                perfilPedido VARCHAR(255),
+                quantidadePecas INTEGER,
+                tempoSeparacao VARCHAR(255),
+                dataHoraInicio VARCHAR(255),
+                dataHoraFim VARCHAR(255)
+            );
+        `);
+        console.log("Tabela 'pedidos' verificada/criada.");
+    } catch (err) {
+        console.error('Erro ao inicializar o banco de dados:', err);
+    }
+}
+initializeDb();
+
+// Middleware de autenticação
+const isAuthenticated = (req, res, next) => {
+    if (req.session.userId) {
+        next();
+    } else {
+        res.status(401).send('Não autenticado');
+    }
 };
 
-app.post('/login', (req, res) => {
+// Rotas de Autenticação
+app.post('/register', async (req, res) => {
     const { fedexId, password } = req.body;
-    db.get(`SELECT * FROM users WHERE fedexId = ?`, [fedexId], async (err, user) => {
-        if (err || !user) {
+    try {
+        const approvedUser = await pool.query('SELECT * FROM approved_users WHERE fedex_id = $1', [fedexId]);
+        if (approvedUser.rows.length === 0) {
+            return res.status(403).send('ID Fedex não aprovado para registro');
+        }
+        const userExists = await pool.query('SELECT * FROM users WHERE fedex_id = $1', [fedexId]);
+        if (userExists.rows.length > 0) {
+            return res.status(409).send('ID Fedex já registrado');
+        }
+        const passwordHash = await bcrypt.hash(password, 10);
+        await pool.query('INSERT INTO users (fedex_id, password_hash) VALUES ($1, $2)', [fedexId, passwordHash]);
+        res.status(201).send('Usuário registrado com sucesso');
+    } catch (err) {
+        console.error('Erro ao registrar usuário:', err);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { fedexId, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE fedex_id = $1', [fedexId]);
+        if (result.rows.length === 0) {
             return res.status(401).send('ID ou senha inválidos');
         }
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (isMatch) {
-            req.session.isLoggedIn = true;
-            req.session.fedexId = fedexId;
-            res.status(200).send('Login bem-sucedido');
-        } else {
-            res.status(401).send('ID ou senha inválidos');
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).send('ID ou senha inválidos');
         }
-    });
+        req.session.userId = user.id;
+        res.send({ message: 'Login bem-sucedido' });
+    } catch (err) {
+        console.error('Erro ao fazer login:', err);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            return res.status(500).send('Erro ao fazer logout');
-        }
-        res.status(200).send('Logout bem-sucedido');
-    });
+    req.session.destroy();
+    res.send({ message: 'Sessão encerrada' });
 });
 
 app.get('/check-session', (req, res) => {
-    res.json({ isLoggedIn: req.session.isLoggedIn, fedexId: req.session.fedexId });
+    res.json({ isLoggedIn: !!req.session.userId });
 });
 
-app.post('/register', async (req, res) => {
-    const { fedexId, password } = req.body;
-    // Checa se o ID FedEx está na lista de aprovados
-    db.get(`SELECT * FROM approved_users WHERE fedexId = ?`, [fedexId], async (err, approvedUser) => {
-        if (err || !approvedUser) {
-            return res.status(401).send('ID FedEx não aprovado para registro');
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        db.run(`INSERT INTO users (fedexId, password) VALUES (?, ?)`, [fedexId, hashedPassword], (err) => {
-            if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(409).send('ID FedEx já está registrado');
-                }
-                return res.status(500).send('Erro ao registrar usuário');
-            }
-            res.status(201).send('Usuário registrado com sucesso');
-        });
-    });
+// Rotas da API (Protegidas)
+app.get('/api/pedidos', isAuthenticated, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM pedidos ORDER BY id DESC');
+        res.json({ pedidos: result.rows });
+    } catch (err) {
+        console.error('Erro ao buscar pedidos:', err);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
-app.get('/', isAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/api/pedidos', isAuthenticated, (req, res) => {
-    const { fedexId } = req.session;
-    db.all(`SELECT * FROM pedidos WHERE idColaborador = ?`, [fedexId], (err, rows) => {
-        if (err) {
-            res.status(500).send("Erro ao buscar pedidos.");
-            return;
-        }
-        res.json({ pedidos: rows });
-    });
-});
-
-app.post('/api/pedidos', isAuthenticated, (req, res) => {
+app.post('/api/pedidos', isAuthenticated, async (req, res) => {
     const { idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim } = req.body;
-    db.run(`INSERT INTO pedidos (idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim],
-        function (err) {
-            if (err) {
-                res.status(500).send("Erro ao salvar pedido.");
-                return;
-            }
-            res.json({ id: this.lastID });
-        });
+    try {
+        await pool.query(
+            'INSERT INTO pedidos (idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim]
+        );
+        res.status(201).send('Pedido salvo com sucesso');
+    } catch (err) {
+        console.error('Erro ao salvar pedido:', err);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
-app.delete('/api/pedidos/:id', isAuthenticated, (req, res) => {
+app.delete('/api/pedidos/:id', isAuthenticated, async (req, res) => {
     const { id } = req.params;
-    db.run(`DELETE FROM pedidos WHERE id = ?`, id, (err) => {
-        if (err) {
-            res.status(500).send("Erro ao apagar pedido.");
-            return;
-        }
-        res.send("Pedido apagado com sucesso.");
-    });
+    try {
+        await pool.query('DELETE FROM pedidos WHERE id = $1', [id]);
+        res.send('Pedido excluído com sucesso');
+    } catch (err) {
+        console.error('Erro ao excluir pedido:', err);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
-app.put('/api/pedidos/:id', isAuthenticated, (req, res) => {
+app.put('/api/pedidos/:id', isAuthenticated, async (req, res) => {
     const { id } = req.params;
-    const { idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas } = req.body;
-    db.run(`UPDATE pedidos SET idColaborador = ?, nomeColaborador = ?, numeroPedido = ?, perfilPedido = ?, quantidadePecas = ? WHERE id = ?`,
-        [idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, id], (err) => {
-            if (err) {
-                res.status(500).send("Erro ao atualizar pedido.");
-                return;
-            }
-            res.send("Pedido atualizado com sucesso.");
-        });
+    const { numeroPedido, idColaborador, nomeColaborador, perfilPedido, quantidadePecas } = req.body;
+    try {
+        await pool.query(
+            'UPDATE pedidos SET numeroPedido = $1, idColaborador = $2, nomeColaborador = $3, perfilPedido = $4, quantidadePecas = $5 WHERE id = $6',
+            [numeroPedido, idColaborador, nomeColaborador, perfilPedido, quantidadePecas, id]
+        );
+        res.send('Pedido atualizado com sucesso');
+    } catch (err) {
+        console.error('Erro ao atualizar pedido:', err);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 app.listen(PORT, () => {
