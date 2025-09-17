@@ -30,6 +30,10 @@
         .timer-info { font-weight: bold; margin-left: 15px; font-size: 1em; color: #555; }
         .finalizar-btn { background-color: #DC143C; color: white; margin-left: 10px; font-size: 0.8em; }
         .finalizar-btn:hover { background-color: #B20C2D; }
+        .pause-btn { background-color: #ffc107; color: #333; margin-left: 10px; font-size: 0.8em; }
+        .pause-btn:hover { background-color: #e0a800; }
+        .resume-btn { background-color: #28a745; color: white; margin-left: 10px; font-size: 0.8em; }
+        .resume-btn:hover { background-color: #218838; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
@@ -115,111 +119,144 @@
         <h1>Medição de Separação de Pedidos</h1>
     </div>
 
-    <div class="main-content">
-        <div class="left-panel">
-            <div class="card">
-                <h2>Novo Pedido</h2>
-                <form id="pedidoForm">
-                    <label for="idColaborador">ID Colaborador:</label>
-                    <input type="text" id="idColaborador" required>
+    <div id="login-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div class="card" style="width: 350px;">
+            <h2 style="text-align: center;">Acesso ao Sistema</h2>
+            
+            <form id="loginForm">
+                <label for="loginFedexId">ID FedEx:</label>
+                <input type="text" id="loginFedexId" required>
+                <label for="loginPassword">Senha:</label>
+                <input type="password" id="loginPassword" required>
+                <button type="submit" style="width: 100%; background-color: #8A2BE2; color: white;">Entrar</button>
+            </form>
+            
+            <form id="registerForm" style="display: none; margin-top: 20px;">
+                <h2 style="text-align: center;">Novo Usuário</h2>
+                <label for="registerFedexId">ID FedEx:</label>
+                <input type="text" id="registerFedexId" required>
+                <label for="registerPassword">Senha:</label>
+                <input type="password" id="registerPassword" required>
+                <button type="submit" style="width: 100%; background-color: #6A5ACD; color: white;">Registrar</button>
+            </form>
 
-                    <label for="nomeColaborador">Nome Colaborador:</label>
-                    <input type="text" id="nomeColaborador" required>
+            <p style="text-align: center; margin-top: 10px;">
+                <a href="#" id="toggleFormLink">Não tem conta? Registre-se</a>
+            </p>
+        </div>
+    </div>
 
-                    <label for="numeroPedido">Número do Pedido:</label>
-                    <input type="text" id="numeroPedido" required>
+    <div id="app-main" style="display: none;">
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>Novo Pedido</h2>
+                    <form id="pedidoForm">
+                        <label for="idColaborador">ID Colaborador:</label>
+                        <input type="text" id="idColaborador" required>
 
-                    <label for="perfilPedido">Perfil do Pedido:</label>
-                    <input type="text" id="perfilPedido" required>
+                        <label for="nomeColaborador">Nome Colaborador:</label>
+                        <input type="text" id="nomeColaborador" required>
 
-                    <label for="quantidadePecas">Quantidade de Peças:</label>
-                    <input type="number" id="quantidadePecas" min="1" required>
+                        <label for="numeroPedido">Número do Pedido:</label>
+                        <input type="text" id="numeroPedido" required>
 
-                    <button type="button" id="iniciarBtn">Adicionar Pedido</button>
-                </form>
+                        <label for="perfilPedido">Perfil do Pedido:</label>
+                        <input type="text" id="perfilPedido" required>
+
+                        <label for="quantidadePecas">Quantidade de Peças:</label>
+                        <input type="number" id="quantidadePecas" min="1" required>
+
+                        <button type="button" id="iniciarBtn">Adicionar Pedido</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>Indicadores de Desempenho</h2>
+                    <div id="kpi-panel">
+                        <div>
+                            <h3>Pedidos Finalizados</h3>
+                            <p id="total-pedidos"></p>
+                        </div>
+                        <div>
+                            <h3>Tempo Médio</h3>
+                            <p id="tempo-medio"></p>
+                        </div>
+                        <div>
+                            <h3>Peças por Minuto</h3>
+                            <p id="pecas-por-minuto"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>Indicadores de Desempenho</h2>
-                <div id="kpi-panel">
-                    <div>
-                        <h3>Pedidos Finalizados</h3>
-                        <p id="total-pedidos"></p>
+            <div class="right-panel">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2 style="margin: 0;">Pedidos em Andamento</h2>
+                        <button id="logoutBtn" style="background-color: #DC143C; color: white; font-size: 0.8em;">Sair</button>
                     </div>
-                    <div>
-                        <h3>Tempo Médio</h3>
-                        <p id="tempo-medio"></p>
-                    </div>
-                    <div>
-                        <h3>Peças por Minuto</h3>
-                        <p id="pecas-por-minuto"></p>
+                    <div id="pedidosEmAndamento"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Gráficos de Produtividade</h2>
+                    <div class="chart-row">
+                        <div class="chart-item">
+                            <div class="chart-controls">
+                                <button id="togglePerfilChartBtn">Mostrar Dados</button>
+                            </div>
+                            <h3>Distribuição por Perfil</h3>
+                            <div class="chart-container">
+                                <canvas id="perfilChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-controls">
+                                <button id="toggleColaboradorChartBtn">Mostrar Dados</button>
+                            </div>
+                            <h3>Produtividade por Colaborador</h3>
+                            <div class="chart-container">
+                                <canvas id="colaboradorChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="right-panel">
-            <div class="card">
-                <h2>Pedidos em Andamento</h2>
-                <div id="pedidosEmAndamento"></div>
+        <div class="full-width card">
+            <h2>Histórico de Pedidos</h2>
+            <div style="margin-bottom: 15px;">
+                <label for="filterStartDate">Filtrar de:</label>
+                <input type="date" id="filterStartDate" style="width: auto; margin-right: 10px;">
+                <label for="filterEndDate">Até:</label>
+                <input type="date" id="filterEndDate" style="width: auto; margin-right: 10px;">
+                <button id="applyFilterBtn" style="background-color: #6A5ACD; color: white;">Aplicar Filtro</button>
+                <button id="clearFilterBtn" style="background-color: #808080; color: white;">Limpar Filtro</button>
             </div>
-
-            <div class="card">
-                <h2>Gráficos de Produtividade</h2>
-                <div class="chart-row">
-                    <div class="chart-item">
-                        <div class="chart-controls">
-                            <button id="togglePerfilChartBtn">Mostrar Dados</button>
-                        </div>
-                        <h3>Distribuição por Perfil</h3>
-                        <div class="chart-container">
-                            <canvas id="perfilChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="chart-item">
-                        <div class="chart-controls">
-                            <button id="toggleColaboradorChartBtn">Mostrar Dados</button>
-                        </div>
-                        <h3>Produtividade por Colaborador</h3>
-                        <div class="chart-container">
-                            <canvas id="colaboradorChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <table id="pedidosTable">
+                <thead>
+                    <tr>
+                        <th>Número do Pedido</th>
+                        <th>ID Colaborador</th>
+                        <th>Nome Colaborador</th>
+                        <th>Perfil do Pedido</th>
+                        <th>Quantidade de Peças</th>
+                        <th>Tempo de Separação</th>
+                        <th>Início</th>
+                        <th>Fim</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            
+            <button id="exportarBtn">Exportar para CSV</button>
+            <button id="limparHistoricoBtn">Limpar Histórico Completo</button>
         </div>
     </div>
 
-    <div class="full-width card">
-        <h2>Histórico de Pedidos</h2>
-        <div style="margin-bottom: 15px;">
-            <label for="filterStartDate">Filtrar de:</label>
-            <input type="date" id="filterStartDate" style="width: auto; margin-right: 10px;">
-            <label for="filterEndDate">Até:</label>
-            <input type="date" id="filterEndDate" style="width: auto; margin-right: 10px;">
-            <button id="applyFilterBtn" style="background-color: #6A5ACD; color: white;">Aplicar Filtro</button>
-            <button id="clearFilterBtn" style="background-color: #808080; color: white;">Limpar Filtro</button>
-        </div>
-        <table id="pedidosTable">
-            <thead>
-                <tr>
-                    <th>Número do Pedido</th>
-                    <th>ID Colaborador</th>
-                    <th>Nome Colaborador</th>
-                    <th>Perfil do Pedido</th>
-                    <th>Quantidade de Peças</th>
-                    <th>Tempo de Separação</th>
-                    <th>Início</th>
-                    <th>Fim</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        
-        <button id="exportarBtn">Exportar para CSV</button>
-        <button id="limparHistoricoBtn">Limpar Histórico Completo</button>
-    </div>
 
     <div id="editModal" class="modal">
         <div class="modal-content">
@@ -253,6 +290,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const loginScreen = document.getElementById('login-screen');
+            const appMain = document.getElementById('app-main');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const toggleFormLink = document.getElementById('toggleFormLink');
+
             const pedidoForm = document.getElementById('pedidoForm');
             const iniciarBtn = document.getElementById('iniciarBtn');
             const pedidosEmAndamentoDiv = document.getElementById('pedidosEmAndamento');
@@ -284,8 +328,8 @@
             let perfilChart;
             let colaboradorChart;
             let pedidosAtivos = {};
-            let isPerfilDatalabelsVisible = false;
-            let isColaboradorDatalabelsVisible = false;
+            let isPerfilDatalabelsVisible = true;
+            let isColaboradorDatalabelsVisible = true;
 
             function formatTime(ms) {
                 let totalSeconds = Math.floor(ms / 1000);
@@ -321,6 +365,12 @@
 
             async function loadHistory(filtered = false) {
                 const response = await fetch('/api/pedidos');
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showLoginScreen();
+                        return;
+                    }
+                }
                 const { pedidos } = await response.json();
                 
                 pedidosTableBody.innerHTML = '';
@@ -495,6 +545,82 @@
                 });
             }
 
+            function showLoginScreen() {
+                loginScreen.style.display = 'flex';
+                appMain.style.display = 'none';
+            }
+
+            function showMainApp() {
+                loginScreen.style.display = 'none';
+                appMain.style.display = 'block';
+                loadHistory();
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fedexId = document.getElementById('loginFedexId').value;
+                const password = document.getElementById('loginPassword').value;
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fedexId, password })
+                });
+                if (response.ok) {
+                    showMainApp();
+                } else {
+                    alert('ID ou senha inválidos.');
+                }
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fedexId = document.getElementById('registerFedexId').value;
+                const password = document.getElementById('registerPassword').value;
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fedexId, password })
+                });
+                if (response.ok) {
+                    alert('Usuário registrado com sucesso. Faça login.');
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('loginForm').style.display = 'block';
+                    toggleFormLink.textContent = 'Não tem conta? Registre-se';
+                } else {
+                    const error = await response.text();
+                    alert(error);
+                }
+            });
+
+            logoutBtn.addEventListener('click', async () => {
+                await fetch('/logout', { method: 'POST' });
+                showLoginScreen();
+            });
+
+            toggleFormLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (loginForm.style.display !== 'none') {
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = 'block';
+                    toggleFormLink.textContent = 'Já tem conta? Faça login';
+                } else {
+                    registerForm.style.display = 'none';
+                    loginForm.style.display = 'block';
+                    toggleFormLink.textContent = 'Não tem conta? Registre-se';
+                }
+            });
+
+            async function checkSessionAndLoadApp() {
+                const response = await fetch('/check-session');
+                const { isLoggedIn } = await response.json();
+                if (isLoggedIn) {
+                    showMainApp();
+                } else {
+                    showLoginScreen();
+                }
+            }
+            checkSessionAndLoadApp();
+
             togglePerfilChartBtn.addEventListener('click', () => {
                 isPerfilDatalabelsVisible = !isPerfilDatalabelsVisible;
                 if (perfilChart) {
@@ -511,8 +637,6 @@
                     toggleColaboradorChartBtn.textContent = isColaboradorDatalabelsVisible ? 'Esconder Dados' : 'Mostrar Dados';
                 }
             });
-
-            loadHistory();
 
             exportarBtn.addEventListener('click', async () => {
                 const response = await fetch('/api/pedidos');
@@ -605,7 +729,7 @@
                 loadHistory();
             });
 
-            iniciarBtn.addEventListener('click', () => {
+            iniciarBtn.addEventListener('click', async () => {
                 if (!pedidoForm.checkValidity()) {
                     alert('Por favor, preencha todos os campos obrigatórios antes de adicionar.');
                     return;
@@ -624,7 +748,9 @@
                     perfilPedido: document.getElementById('perfilPedido').value,
                     quantidadePecas: document.getElementById('quantidadePecas').value,
                     dataHoraInicio: dataInicioFormatada,
-                    startTime: Date.now()
+                    startTime: Date.now(),
+                    pausedTime: 0,
+                    isPaused: false
                 };
                 pedidosAtivos[numeroPedido] = pedido;
                 const pedidoDiv = document.createElement('div');
@@ -639,28 +765,33 @@
                     <div class="timer-info">
                         Tempo: <span id="timer-${numeroPedido}">00:00:00</span>
                     </div>
+                    <button class="pause-btn" data-numero-pedido="${numeroPedido}">Pausar</button>
                     <button class="finalizar-btn" data-numero-pedido="${numeroPedido}">Finalizar</button>
                 `;
                 pedidosEmAndamentoDiv.prepend(pedidoDiv);
+                
                 pedido.timerInterval = setInterval(() => {
-                    const elapsedTime = Date.now() - pedido.startTime;
-                    const timerSpan = document.getElementById(`timer-${numeroPedido}`);
-                    if (timerSpan) {
-                        timerSpan.textContent = formatTime(elapsedTime);
+                    if (!pedido.isPaused) {
+                        const elapsedTime = Date.now() - pedido.startTime - pedido.pausedTime;
+                        const timerSpan = document.getElementById(`timer-${numeroPedido}`);
+                        if (timerSpan) {
+                            timerSpan.textContent = formatTime(elapsedTime);
+                        }
                     }
                 }, 1000);
                 pedidoForm.reset();
             });
 
             pedidosEmAndamentoDiv.addEventListener('click', async (event) => {
+                const numeroPedido = event.target.dataset.numeroPedido;
+                const pedido = pedidosAtivos[numeroPedido];
+
+                if (!pedido) return;
+
                 if (event.target.classList.contains('finalizar-btn')) {
-                    const numeroPedido = event.target.dataset.numeroPedido;
-                    const pedido = pedidosAtivos[numeroPedido];
-                    if (!pedido) return;
                     clearInterval(pedido.timerInterval);
-                    const endTime = Date.now();
-                    const elapsedTime = endTime - pedido.startTime;
-                    const tempoSeparacaoFormatado = formatTime(elapsedTime);
+                    const finalElapsedTime = pedido.isPaused ? pedido.pausedTime : (Date.now() - pedido.startTime - pedido.pausedTime);
+                    const tempoSeparacaoFormatado = formatTime(finalElapsedTime);
                     const dataFimFormatada = new Date().toLocaleString('pt-BR');
                     
                     const pedidoToSave = {
@@ -678,6 +809,20 @@
                     
                     delete pedidosAtivos[numeroPedido];
                     loadHistory();
+                } else if (event.target.classList.contains('pause-btn')) {
+                    if (pedido.isPaused) {
+                        pedido.isPaused = false;
+                        event.target.textContent = 'Pausar';
+                        event.target.classList.remove('resume-btn');
+                        event.target.classList.add('pause-btn');
+                        pedido.startTime = Date.now();
+                    } else {
+                        pedido.isPaused = true;
+                        event.target.textContent = 'Continuar';
+                        event.target.classList.remove('pause-btn');
+                        event.target.classList.add('resume-btn');
+                        pedido.pausedTime += Date.now() - pedido.startTime;
+                    }
                 }
             });
         });
