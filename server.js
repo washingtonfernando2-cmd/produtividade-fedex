@@ -16,18 +16,19 @@ const pool = new Pool({
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Linha corrigida para servir arquivos da pasta principal
+app.use(express.static(path.join(__dirname, '')));
+
 app.use(session({
-    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
+    secret: 'sua-chave-secreta-muito-segura',
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 // 24 horas
+        maxAge: 1000 * 60 * 60 * 24
     }
 }));
 
-// Funções de inicialização do banco de dados
 async function initializeDb() {
     try {
         await pool.query(`
@@ -68,7 +69,6 @@ async function initializeDb() {
 }
 initializeDb();
 
-// Middleware de autenticação
 const isAuthenticated = (req, res, next) => {
     if (req.session.userId) {
         next();
@@ -77,7 +77,6 @@ const isAuthenticated = (req, res, next) => {
     }
 };
 
-// Rotas de Autenticação
 app.post('/register', async (req, res) => {
     const { fedexId, password } = req.body;
     try {
@@ -127,7 +126,6 @@ app.get('/check-session', (req, res) => {
     res.json({ isLoggedIn: !!req.session.userId });
 });
 
-// Rotas da API (Protegidas)
 app.get('/api/pedidos', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM pedidos ORDER BY id DESC');
