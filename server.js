@@ -3,6 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const pgSession = require('connect-pg-simple')(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,15 +20,21 @@ app.use(express.json());
 // Linha corrigida para servir arquivos da pasta principal
 app.use(express.static(path.join(__dirname, '')));
 
+// Configuração da sessão com o PostgreSQL
 app.use(session({
-    secret: 'sua-chave-secreta-muito-segura',
+    store: new pgSession({
+        pool : pool,                // Conecta o pool de conexões do pg
+        tableName : 'session'       // Nome da tabela para armazenar sessões
+    }),
+    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 semana
     }
 }));
+
 
 async function initializeDb() {
     try {
