@@ -17,21 +17,20 @@ const pool = new Pool({
 });
 
 app.use(express.json());
-// Linha corrigida para servir arquivos da pasta principal
 app.use(express.static(path.join(__dirname, '')));
 
 // Configuração da sessão com o PostgreSQL
 app.use(session({
     store: new pgSession({
-        pool : pool,                // Conecta o pool de conexões do pg
-        tableName : 'session'       // Nome da tabela para armazenar sessões
+        pool : pool,
+        tableName : 'session'
     }),
-    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
+    secret: 'sua-chave-secreta-muito-segura',
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 semana
+        maxAge: 1000 * 60 * 60 * 24 * 7
     }
 }));
 
@@ -70,6 +69,22 @@ async function initializeDb() {
             );
         `);
         console.log("Tabela 'pedidos' verificada/criada.");
+        
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS "session" (
+                "sid" varchar NOT NULL COLLATE "default",
+                "sess" json NOT NULL,
+                "expire" timestamp(6) NOT NULL
+            )
+            WITH (OIDS=FALSE);
+        `);
+        console.log("Tabela 'session' verificada/criada.");
+        await pool.query(`
+            ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+        `);
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+        `);
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
