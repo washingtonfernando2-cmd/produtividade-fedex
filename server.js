@@ -70,6 +70,7 @@ async function initializeDb() {
         `);
         console.log("Tabela 'pedidos' verificada/criada.");
         
+        // CÓDIGO ADICIONADO PARA CRIAR A TABELA 'session'
         await pool.query(`
             CREATE TABLE IF NOT EXISTS "session" (
                 "sid" varchar NOT NULL COLLATE "default",
@@ -85,9 +86,11 @@ async function initializeDb() {
         await pool.query(`
             CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
         `);
+
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
+}
 }
 initializeDb();
 
