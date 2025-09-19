@@ -23,15 +23,15 @@ app.use(express.static(path.join(__dirname, '')));
 // Configuração da sessão com o PostgreSQL
 app.use(session({
     store: new pgSession({
-        pool : pool,
-        tableName : 'session'
+        pool : pool,                // Conecta o pool de conexões do pg
+        tableName : 'session'       // Nome da tabela para armazenar sessões
     }),
-    secret: 'sua-chave-secreta-muito-segura',
+    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 * 7
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 semana
     }
 }));
 
@@ -147,7 +147,7 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/check-session', (req, res) => {
-    res.json({ isLoggedIn: !!req.session.userId, userId: req.session.userId });
+    res.json({ isLoggedIn: !!req.session.userId });
 });
 
 app.get('/api/pedidos', isAuthenticated, async (req, res) => {
