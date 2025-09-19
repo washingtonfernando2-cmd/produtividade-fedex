@@ -17,6 +17,7 @@ const pool = new Pool({
 });
 
 app.use(express.json());
+// Linha corrigida para servir arquivos da pasta principal
 app.use(express.static(path.join(__dirname, '')));
 
 // Configuração da sessão com o PostgreSQL
@@ -70,7 +71,6 @@ async function initializeDb() {
         `);
         console.log("Tabela 'pedidos' verificada/criada.");
         
-        // CÓDIGO ADICIONADO PARA CRIAR A TABELA 'session'
         await pool.query(`
             CREATE TABLE IF NOT EXISTS "session" (
                 "sid" varchar NOT NULL COLLATE "default",
@@ -86,11 +86,9 @@ async function initializeDb() {
         await pool.query(`
             CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
         `);
-
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
-}
 }
 initializeDb();
 
@@ -134,6 +132,7 @@ app.post('/login', async (req, res) => {
         if (!isMatch) {
             return res.status(401).send('ID ou senha inválidos');
         }
+        // Salvando o ID do usuário na sessão
         req.session.userId = user.id;
         res.send({ message: 'Login bem-sucedido' });
     } catch (err) {
@@ -148,7 +147,7 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/check-session', (req, res) => {
-    res.json({ isLoggedIn: !!req.session.userId });
+    res.json({ isLoggedIn: !!req.session.userId, userId: req.session.userId });
 });
 
 app.get('/api/pedidos', isAuthenticated, async (req, res) => {
