@@ -30,10 +30,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 * 7
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 semana
     }
 }));
-
 
 async function initializeDb() {
     try {
@@ -54,7 +53,7 @@ async function initializeDb() {
             );
         `);
         console.log("Tabela 'users' verificada/criada.");
-
+        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS pedidos (
                 id SERIAL PRIMARY KEY,
@@ -69,7 +68,7 @@ async function initializeDb() {
             );
         `);
         console.log("Tabela 'pedidos' verificada/criada.");
-
+        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS "session" (
                 "sid" varchar NOT NULL COLLATE "default",
@@ -79,11 +78,11 @@ async function initializeDb() {
             WITH (OIDS=FALSE);
         `);
         console.log("Tabela 'session' verificada/criada.");
-
+        
         await pool.query(`
             ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
         `);
-
+        
         await pool.query(`
             CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
         `);
