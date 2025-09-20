@@ -8,7 +8,6 @@ const pgSession = require('connect-pg-simple')(session);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuração do banco de dados PostgreSQL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -17,16 +16,16 @@ const pool = new Pool({
 });
 
 app.use(express.json());
-// Linha corrigida para servir arquivos da pasta principal
 app.use(express.static(path.join(__dirname, '')));
 
-// Configuração da sessão com o PostgreSQL
+const sessionStore = new pgSession({
+    pool : pool,
+    tableName : 'session'
+});
+
 app.use(session({
-    store: new pgSession({
-        pool : pool,                // Conecta o pool de conexões do pg
-        tableName : 'session'       // Nome da tabela para armazenar sessões
-    }),
-    secret: 'sua-chave-secreta-muito-segura', // Use uma chave segura e única
+    store: sessionStore,
+    secret: 'sua-chave-secreta-muito-segura',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -34,7 +33,6 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24 * 7 // 1 semana
     }
 }));
-
 
 async function initializeDb() {
     try {
@@ -55,7 +53,7 @@ async function initializeDb() {
             );
         `);
         console.log("Tabela 'users' verificada/criada.");
-
+        
         await pool.query(`
             CREATE TABLE IF NOT EXISTS pedidos (
                 id SERIAL PRIMARY KEY,
@@ -80,12 +78,15 @@ async function initializeDb() {
             WITH (OIDS=FALSE);
         `);
         console.log("Tabela 'session' verificada/criada.");
+        
         await pool.query(`
             ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
         `);
+        
         await pool.query(`
             CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
         `);
+
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
@@ -132,7 +133,6 @@ app.post('/login', async (req, res) => {
         if (!isMatch) {
             return res.status(401).send('ID ou senha inválidos');
         }
-        // Salvando o ID do usuário na sessão
         req.session.userId = user.id;
         res.send({ message: 'Login bem-sucedido' });
     } catch (err) {
