@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const pgSession = require('connect-pg-simple')(session);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,8 +18,42 @@ const pool = new Pool({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '')));
 
+const sessionStore = new pgSession({
+    pool : pool,
+    tableName : 'session'
+});
+
+app.use(session({
+    store: sessionStore,
+    secret: 'sua-chave-secreta-muito-segura',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
+}));
+
 async function initializeDb() {
     try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS approved_users (
+                id SERIAL PRIMARY KEY,
+                fedex_id VARCHAR(255) UNIQUE NOT NULL,
+                name VARCHAR(255)
+            );
+        `);
+        console.log("Tabela 'approved_users' verificada/criada.");
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                fedex_id VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL
+            );
+        `);
+        console.log("Tabela 'users' verificada/criada.");
+
         await pool.query(`
             CREATE TABLE IF NOT EXISTS pedidos (
                 id SERIAL PRIMARY KEY,
@@ -32,13 +69,88 @@ async function initializeDb() {
         `);
         console.log("Tabela 'pedidos' verificada/criada.");
 
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS "session" (
+                "sid" varchar NOT NULL COLLATE "default",
+                "sess" json NOT NULL,
+                "expire" timestamp(6) NOT NULL
+            )
+            WITH (OIDS=FALSE);
+        `);
+        console.log("Tabela 'session' verificada/criada.");
+
+        await pool.query(`
+            ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+        `);
+
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+        `);
+
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
 }
 initializeDb();
 
-app.get('/api/pedidos', async (req, res) => {
+const isAuthenticated = (req, res, next) => {
+    if (req.session.userId) {
+        next();
+    } else {
+        res.status(401).send('Não autenticado');
+    }
+};
+
+app.post('/register', async (req, res) => {
+    const { fedexId, password } = req.body;
+    try {
+        const approvedUser = await pool.query('SELECT * FROM approved_users WHERE fedex_id = $1', [fedexId]);
+        if (approvedUser.rows.length === 0) {
+            return res.status(403).send('ID Fedex não aprovado para registro');
+        }
+        const userExists = await pool.query('SELECT * FROM users WHERE fedex_id = $1', [fedexId]);
+        if (userExists.rows.length > 0) {
+            return res.status(409).send('ID Fedex já registrado');
+        }
+        const passwordHash = await bcrypt.hash(password, 10);
+        await pool.query('INSERT INTO users (fedex_id, password_hash) VALUES ($1, $2)', [fedexId, passwordHash]);
+        res.status(201).send('Usuário registrado com sucesso');
+    } catch (err) {
+        console.error('Erro ao registrar usuário:', err);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const { fedexId, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE fedex_id = $1', [fedexId]);
+        if (result.rows.length === 0) {
+            return res.status(401).send('ID ou senha inválidos');
+        }
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).send('ID ou senha inválidos');
+        }
+        req.session.userId = user.id;
+        res.send({ message: 'Login bem-sucedido' });
+    } catch (err) {
+        console.error('Erro ao fazer login:', err);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+app.post('/logout', (req, res) => {
+    req.session.destroy();
+    res.send({ message: 'Sessão encerrada' });
+});
+
+app.get('/check-session', (req, res) => {
+    res.json({ isLoggedIn: !!req.session.userId });
+});
+
+app.get('/api/pedidos', isAuthenticated, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM pedidos ORDER BY id DESC');
         res.json({ pedidos: result.rows });
@@ -48,7 +160,7 @@ app.get('/api/pedidos', async (req, res) => {
     }
 });
 
-app.post('/api/pedidos', async (req, res) => {
+app.post('/api/pedidos', isAuthenticated, async (req, res) => {
     const { idColaborador, nomeColaborador, numeroPedido, perfilPedido, quantidadePecas, tempoSeparacao, dataHoraInicio, dataHoraFim } = req.body;
     try {
         await pool.query(
@@ -62,7 +174,7 @@ app.post('/api/pedidos', async (req, res) => {
     }
 });
 
-app.delete('/api/pedidos/:id', async (req, res) => {
+app.delete('/api/pedidos/:id', isAuthenticated, async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM pedidos WHERE id = $1', [id]);
@@ -73,7 +185,7 @@ app.delete('/api/pedidos/:id', async (req, res) => {
     }
 });
 
-app.put('/api/pedidos/:id', async (req, res) => {
+app.put('/api/pedidos/:id', isAuthenticated, async (req, res) => {
     const { id } = req.params;
     const { numeroPedido, idColaborador, nomeColaborador, perfilPedido, quantidadePecas } = req.body;
     try {
@@ -86,10 +198,6 @@ app.put('/api/pedidos/:id', async (req, res) => {
         console.error('Erro ao atualizar pedido:', err);
         res.status(500).send('Erro no servidor');
     }
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
