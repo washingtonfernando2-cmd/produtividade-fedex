@@ -116,7 +116,12 @@
                         <label for="numeroPedido">Número do Pedido:</label>
                         <input type="text" id="numeroPedido" required>
                         <label for="perfilPedido">Perfil do Pedido:</label>
-                        <input type="text" id="perfilPedido" required>
+                        <select id="perfilPedido" required>
+                            <option value="" disabled selected>Selecione um perfil</option>
+                            <option value="Sólido">Sólido</option>
+                            <option value="Mix">Mix</option>
+                            <option value="Pack">Pack</option>
+                        </select>
                         <label for="quantidadePecas">Quantidade de Peças:</label>
                         <input type="number" id="quantidadePecas" min="1" required>
                         <button type="button" id="iniciarBtn">Adicionar Pedido</button>
@@ -215,7 +220,11 @@
                 <label for="editNomeColaborador">Nome Colaborador:</label>
                 <input type="text" id="editNomeColaborador" required>
                 <label for="editPerfilPedido">Perfil do Pedido:</label>
-                <input type="text" id="editPerfilPedido" required>
+                <select id="editPerfilPedido" required>
+                    <option value="Sólido">Sólido</option>
+                    <option value="Mix">Mix</option>
+                    <option value="Pack">Pack</option>
+                </select>
                 <label for="editQuantidadePecas">Quantidade de Peças:</label>
                 <input type="number" id="editQuantidadePecas" min="1" required>
                 <div class="modal-buttons">
@@ -639,7 +648,12 @@
                     const dataFimFormatada = new Date().toLocaleString('pt-BR');
                     
                     const pedidoToSave = {
-                        ...pedido,
+                        idColaborador: pedido.idColaborador,
+                        nomeColaborador: pedido.nomeColaborador,
+                        numeroPedido: pedido.numeroPedido,
+                        perfilPedido: pedido.perfilPedido,
+                        quantidadePecas: pedido.quantidadePecas,
+                        dataHoraInicio: pedido.dataHoraInicio,
                         tempoSeparacao: tempoSeparacaoFormatado,
                         dataHoraFim: dataFimFormatada
                     };
@@ -654,17 +668,19 @@
                     delete pedidosAtivos[numeroPedido];
                     loadHistory();
                 } else if (event.target.classList.contains('pause-btn')) {
+                    const pauseBtn = event.target;
+                    
                     if (pedido.isPaused) {
                         pedido.isPaused = false;
-                        event.target.textContent = 'Pausar';
-                        event.target.classList.remove('resume-btn');
-                        event.target.classList.add('pause-btn');
-                        pedido.startTime = Date.now();
+                        pauseBtn.textContent = 'Pausar';
+                        pauseBtn.classList.remove('resume-btn');
+                        pauseBtn.classList.add('pause-btn');
+                        pedido.startTime = Date.now() - pedido.pausedTime;
                     } else {
                         pedido.isPaused = true;
-                        event.target.textContent = 'Continuar';
-                        event.target.classList.remove('pause-btn');
-                        event.target.classList.add('resume-btn');
+                        pauseBtn.textContent = 'Continuar';
+                        pauseBtn.classList.remove('pause-btn');
+                        pauseBtn.classList.add('resume-btn');
                         pedido.pausedTime += Date.now() - pedido.startTime;
                     }
                 }
