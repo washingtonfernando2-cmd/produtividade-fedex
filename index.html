@@ -9,22 +9,18 @@
         .header { display: flex; align-items: center; padding: 10px 20px; background-color: #4B0082; color: white; position: relative; }
         .header h1 { margin: 0; font-size: 1.8em; text-align: center; flex-grow: 1; }
         .logo { height: 40px; position: absolute; left: 20px; }
-
         .main-content { display: flex; flex-wrap: wrap; margin: 10px; gap: 20px; }
         .left-panel { flex: 1; min-width: 300px; max-width: 350px; display: flex; flex-direction: column; gap: 20px; }
         .right-panel { flex: 2; min-width: 550px; display: flex; flex-direction: column; gap: 20px; }
         .full-width { width: 100%; margin: 10px; }
-
         .card { background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2 { color: #4B0082; font-size: 1.4em; margin-top: 0; text-align: center; }
-        
         form { margin-bottom: 0; padding: 0; border: none; }
         label { display: block; margin-top: 8px; font-weight: bold; color: #555; }
         input[type="text"], input[type="number"], select { width: calc(100% - 22px); padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { padding: 8px 15px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background-color 0.2s ease; }
         #iniciarBtn { background-color: #8A2BE2; color: white; }
         #iniciarBtn:hover { background-color: #6A1AA0; }
-
         .pedido-em-andamento { border: 1px solid #e0e0e0; background-color: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .pedido-info { flex-grow: 1; font-size: 0.9em; }
         .timer-info { font-weight: bold; margin-left: 15px; font-size: 1em; color: #555; }
@@ -34,24 +30,19 @@
         .pause-btn:hover { background-color: #e0a800; }
         .resume-btn { background-color: #28a745; color: white; margin-left: 10px; font-size: 0.8em; }
         .resume-btn:hover { background-color: #218838; }
-
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
         th { background-color: #ebebeb; color: #444; }
         #exportarBtn { background-color: #007bff; color: white; margin-top: 10px; }
         #limparHistoricoBtn { background-color: #CC0000; color: white; margin-top: 10px; }
-        
         .chart-row { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; }
         .chart-item { flex: 1; min-width: 300px; max-width: 450px; }
-
         .chart-controls { text-align: right; margin-bottom: 5px; }
-
         .action-buttons button { padding: 4px 8px; font-size: 0.7em; margin-right: 5px; }
         .edit-btn { background-color: #FFA500; color: white; }
         .edit-btn:hover { background-color: #CD8500; }
         .delete-btn { background-color: #FF4500; color: white; }
         .delete-btn:hover { background-color: #CD3700; }
-        
         .modal {
             display: none;
             position: fixed;
@@ -65,7 +56,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .modal-content {
             background-color: #fefefe;
             margin: auto;
@@ -77,7 +67,6 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             position: relative;
         }
-
         .close-button {
             color: #aaa;
             float: right;
@@ -87,20 +76,17 @@
             top: 10px;
             right: 20px;
         }
-
         .close-button:hover,
         .close-button:focus {
             color: black;
             text-decoration: none;
             cursor: pointer;
         }
-
         .modal-content label { margin-top: 10px; }
         .modal-content input[type="text"],
         .modal-content input[type="number"] { width: calc(100% - 20px); }
         .modal-buttons { text-align: right; margin-top: 20px; }
         .modal-buttons button { margin-left: 10px; }
-
         @media (max-width: 768px) {
             .main-content, .chart-row { flex-direction: column; }
             .left-panel, .right-panel, .chart-item { max-width: 100%; min-width: unset; }
@@ -113,40 +99,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
-
     <div class="header">
         <img src="fedex_logo.png" alt="FedEx Logo" class="logo">
         <h1>Medição de Separação de Pedidos</h1>
     </div>
-
-    <div id="login-screen" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
-        <div class="card" style="width: 350px;">
-            <h2 style="text-align: center;">Acesso ao Sistema</h2>
-            
-            <form id="loginForm">
-                <label for="loginFedexId">ID FedEx:</label>
-                <input type="text" id="loginFedexId" required>
-                <label for="loginPassword">Senha:</label>
-                <input type="password" id="loginPassword" required>
-                <button type="submit" style="width: 100%; background-color: #8A2BE2; color: white;">Entrar</button>
-            </form>
-            
-            <form id="registerForm" style="display: none; margin-top: 20px;">
-                <h2 style="text-align: center;">Novo Usuário</h2>
-                <label for="registerFedexId">ID FedEx:</label>
-                <input type="text" id="registerFedexId" required>
-                <label for="registerPassword">Senha:</label>
-                <input type="password" id="registerPassword" required>
-                <button type="submit" style="width: 100%; background-color: #6A5ACD; color: white;">Registrar</button>
-            </form>
-
-            <p style="text-align: center; margin-top: 10px;">
-                <a href="#" id="toggleFormLink">Não tem conta? Registre-se</a>
-            </p>
-        </div>
-    </div>
-
-    <div id="app-main" style="display: none;">
+    <div id="app-main">
         <div class="main-content">
             <div class="left-panel">
                 <div class="card">
@@ -154,23 +111,17 @@
                     <form id="pedidoForm">
                         <label for="idColaborador">ID Colaborador:</label>
                         <input type="text" id="idColaborador" required>
-
                         <label for="nomeColaborador">Nome Colaborador:</label>
                         <input type="text" id="nomeColaborador" required>
-
                         <label for="numeroPedido">Número do Pedido:</label>
                         <input type="text" id="numeroPedido" required>
-
                         <label for="perfilPedido">Perfil do Pedido:</label>
                         <input type="text" id="perfilPedido" required>
-
                         <label for="quantidadePecas">Quantidade de Peças:</label>
                         <input type="number" id="quantidadePecas" min="1" required>
-
                         <button type="button" id="iniciarBtn">Adicionar Pedido</button>
                     </form>
                 </div>
-
                 <div class="card">
                     <h2>Indicadores de Desempenho</h2>
                     <div id="kpi-panel">
@@ -189,16 +140,13 @@
                     </div>
                 </div>
             </div>
-
             <div class="right-panel">
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h2 style="margin: 0;">Pedidos em Andamento</h2>
-                        <button id="logoutBtn" style="background-color: #DC143C; color: white; font-size: 0.8em;">Sair</button>
                     </div>
                     <div id="pedidosEmAndamento"></div>
                 </div>
-
                 <div class="card">
                     <h2>Gráficos de Produtividade</h2>
                     <div class="chart-row">
@@ -224,7 +172,6 @@
                 </div>
             </div>
         </div>
-
         <div class="full-width card">
             <h2>Histórico de Pedidos</h2>
             <div style="margin-bottom: 15px;">
@@ -251,13 +198,10 @@
                 </thead>
                 <tbody></tbody>
             </table>
-            
             <button id="exportarBtn">Exportar para CSV</button>
             <button id="limparHistoricoBtn">Limpar Histórico Completo</button>
         </div>
     </div>
-
-
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -266,19 +210,14 @@
                 <input type="hidden" id="editPedidoIndex">
                 <label for="editNumeroPedido">Número do Pedido:</label>
                 <input type="text" id="editNumeroPedido" required>
-
                 <label for="editIdColaborador">ID Colaborador:</label>
                 <input type="text" id="editIdColaborador" required>
-
                 <label for="editNomeColaborador">Nome Colaborador:</label>
                 <input type="text" id="editNomeColaborador" required>
-
                 <label for="editPerfilPedido">Perfil do Pedido:</label>
                 <input type="text" id="editPerfilPedido" required>
-
                 <label for="editQuantidadePecas">Quantidade de Peças:</label>
                 <input type="number" id="editQuantidadePecas" min="1" required>
-                
                 <div class="modal-buttons">
                     <button type="button" id="saveEditBtn" style="background-color: #28a745; color: white;">Salvar</button>
                     <button type="button" id="cancelEditBtn" style="background-color: #6c757d; color: white;">Cancelar</button>
@@ -286,45 +225,30 @@
             </form>
         </div>
     </div>
-
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const loginScreen = document.getElementById('login-screen');
-            const appMain = document.getElementById('app-main');
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const toggleFormLink = document.getElementById('toggleFormLink');
-
             const pedidoForm = document.getElementById('pedidoForm');
             const iniciarBtn = document.getElementById('iniciarBtn');
             const pedidosEmAndamentoDiv = document.getElementById('pedidosEmAndamento');
             const pedidosTableBody = document.querySelector('#pedidosTable tbody');
             const exportarBtn = document.getElementById('exportarBtn');
             const limparHistoricoBtn = document.getElementById('limparHistoricoBtn');
-
             const totalPedidosEl = document.getElementById('total-pedidos');
             const tempoMedioEl = document.getElementById('tempo-medio');
             const pecasPorMinutoEl = document.getElementById('pecas-por-minuto');
-
             const filterStartDateEl = document.getElementById('filterStartDate');
             const filterEndDateEl = document.getElementById('filterEndDate');
             const applyFilterBtn = document.getElementById('applyFilterBtn');
             const clearFilterBtn = document.getElementById('clearFilterBtn');
-
             const ctxPerfil = document.getElementById('perfilChart').getContext('2d');
             const ctxColaborador = document.getElementById('colaboradorChart').getContext('2d');
-            
             const togglePerfilChartBtn = document.getElementById('togglePerfilChartBtn');
             const toggleColaboradorChartBtn = document.getElementById('toggleColaboradorChartBtn');
-            
             const editModal = document.getElementById('editModal');
             const closeButton = editModal.querySelector('.close-button');
             const editPedidoForm = document.getElementById('editPedidoForm');
             const saveEditBtn = document.getElementById('saveEditBtn');
             const cancelEditBtn = document.getElementById('cancelEditBtn');
-
             let perfilChart;
             let colaboradorChart;
             let pedidosAtivos = {};
@@ -340,7 +264,6 @@
                 return [String(hours).padStart(2, '0'), String(minutes).padStart(2, '0'), String(seconds).padStart(2, '0')].join(':');
             }
 
-            // Funções de comunicação com o servidor
             async function saveHistory(pedido) {
                 await fetch('/api/pedidos', {
                     method: 'POST',
@@ -366,15 +289,11 @@
             async function loadHistory(filtered = false) {
                 const response = await fetch('/api/pedidos');
                 if (!response.ok) {
-                    if (response.status === 401) {
-                        showLoginScreen();
-                        return;
-                    }
+                    console.error('Falha ao carregar histórico: Servidor respondeu com status', response.status);
+                    return;
                 }
                 const { pedidos } = await response.json();
-                
                 pedidosTableBody.innerHTML = '';
-                
                 let filteredHistory = pedidos;
                 if (filtered) {
                     const startDate = filterStartDateEl.value ? new Date(filterStartDateEl.value + 'T00:00:00') : null;
@@ -391,7 +310,6 @@
                         return match;
                     });
                 }
-                
                 filteredHistory.forEach(pedido => {
                     const newRow = pedidosTableBody.insertRow();
                     newRow.innerHTML = `
@@ -545,82 +463,6 @@
                 });
             }
 
-            function showLoginScreen() {
-                loginScreen.style.display = 'flex';
-                appMain.style.display = 'none';
-            }
-
-            function showMainApp() {
-                loginScreen.style.display = 'none';
-                appMain.style.display = 'block';
-                loadHistory();
-            }
-
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const fedexId = document.getElementById('loginFedexId').value;
-                const password = document.getElementById('loginPassword').value;
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fedexId, password })
-                });
-                if (response.ok) {
-                    showMainApp();
-                } else {
-                    alert('ID ou senha inválidos.');
-                }
-            });
-
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const fedexId = document.getElementById('registerFedexId').value;
-                const password = document.getElementById('registerPassword').value;
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fedexId, password })
-                });
-                if (response.ok) {
-                    alert('Usuário registrado com sucesso. Faça login.');
-                    document.getElementById('registerForm').style.display = 'none';
-                    document.getElementById('loginForm').style.display = 'block';
-                    toggleFormLink.textContent = 'Não tem conta? Registre-se';
-                } else {
-                    const error = await response.text();
-                    alert(error);
-                }
-            });
-
-            logoutBtn.addEventListener('click', async () => {
-                await fetch('/logout', { method: 'POST' });
-                showLoginScreen();
-            });
-
-            toggleFormLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (loginForm.style.display !== 'none') {
-                    loginForm.style.display = 'none';
-                    registerForm.style.display = 'block';
-                    toggleFormLink.textContent = 'Já tem conta? Faça login';
-                } else {
-                    registerForm.style.display = 'none';
-                    loginForm.style.display = 'block';
-                    toggleFormLink.textContent = 'Não tem conta? Registre-se';
-                }
-            });
-
-            async function checkSessionAndLoadApp() {
-                const response = await fetch('/check-session');
-                const { isLoggedIn } = await response.json();
-                if (isLoggedIn) {
-                    showMainApp();
-                } else {
-                    showLoginScreen();
-                }
-            }
-            checkSessionAndLoadApp();
-
             togglePerfilChartBtn.addEventListener('click', () => {
                 isPerfilDatalabelsVisible = !isPerfilDatalabelsVisible;
                 if (perfilChart) {
@@ -638,6 +480,8 @@
                 }
             });
 
+            loadHistory();
+            
             exportarBtn.addEventListener('click', async () => {
                 const response = await fetch('/api/pedidos');
                 const { pedidos } = await response.json();
